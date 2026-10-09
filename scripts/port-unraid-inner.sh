@@ -34,6 +34,9 @@ if [[ ! -d "$UPSTREAM/.git" ]]; then
     fail "A pasta $UPSTREAM ja existe e nao e um clone Git. Verifique seu conteudo antes de mover ou remover; nenhum arquivo foi apagado."
   git clone https://github.com/snuri00/psp-web-recomp.git "$UPSTREAM"
 fi
+
+echo "== [1.1/5] Aplicando HLE de Modulos do PES6 (patch local, idempotente)"
+python3 "$PROJECT/scripts/patch-psp-modulemgr.py" "$UPSTREAM"
 mkdir -p "$GAME/root"
 
 echo "== [2/5] Extraindo ISO local do PES6 (arquivo original inalterado)"
