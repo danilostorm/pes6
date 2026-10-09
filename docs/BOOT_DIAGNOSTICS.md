@@ -136,3 +136,47 @@ Para testar outro PC posteriormente, sem novo commit de codigo:
 `PES6_EXTRA_SEEDS=0x0897FD08,0xENDERECO bash scripts/port-unraid.sh build`.
 Usar somente enderecos confirmados pelo diagnostico dentro do segmento
 executavel; cada endereco adicional deve ser revisado individualmente.
+
+## Quarta etapa: entrada AOT faltante em 0x08986598
+
+A recompilacao que adicionou 0x0897FD08 agora passou pela inicializacao
+principal, imprimiu o banner de PES 6 PSP e iniciou os servicos de video:
+
+```text
+[guest] - PES6 for PSP No.0001 - (Sep 29 2006 20:03:03)
+[hle] sceGeListEnQueue(...) -> 1
+[hle] sceGeDrawSync(...) -> 0
+[hle] sceDisplaySetMode(... 480, 272 ...) -> 0
+[kernel] halted: No recompiled function registered at 0x08986598
+```
+
+O PC 0x08986598 esta dentro da faixa RX do ELF, conhecida do diagnostico
+anterior (0x08804000..0x089D6070). Seus bytes ainda **nao foram analisados**
+no AEROCOOL; a compilacao agora valida se cada PC solicitado e alinhado,
+file-backed, RX e possui instrucao nao nula antes de prosseguir.
+
+O script de build inclui por padrao as duas entradas observadas:
+`PES6_EXTRA_SEEDS=0x0897FD08,0x08986598`. Se qualquer validacao falhar,
+**o build para sem publicar novo motor**, preservando o executavel antigo.
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh stop
+bash scripts/port-unraid.sh diagnose   # agora analisa 0x08986598 por padrao
+bash scripts/port-unraid.sh build
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh serve
+```
+
+Com `?trace=1&threads=0` o PSPRecomp tambem registra
+`[missing-aot]` e os ultimos 24 `[missing-aot-previous]` ao parar por
+uma funcao nao registrada; a instrumentacao so roda com diagnostico.
+O objetivo e identificar a origem de futuros saltos, nao apenas
+repetir seeds cegamente. O console do navegador pode ser utilizado para
+obter esse registro.
+
+Se o navegador ainda apontar o endereco antigo apos recompilar, forcar
+atualizacao completa da pagina, verificar cache do proxy e conferir a
+saida do novo build. Um numero de FPS na pagina nao significa que o jogo
+esta funcional enquanto aparece `Stopped`.
