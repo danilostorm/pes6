@@ -38,7 +38,7 @@ case "$MODE" in
     docker run --rm --init \
       --mount "type=bind,source=$ROOT,target=/project,readonly" \
       "$IMAGE" python3 /project/scripts/diagnose-aot-entry.py \
-      --root /project --address "${PES6_DIAG_PC:-0x0897FD08,0x08986598}"
+      --root /project --address "${PES6_DIAG_PC:-0x08986598}"
     ;;
   serve)
     [[ -f "$ROOT/.recomp-work/psp-web-recomp/build/web-pes6/profiles/web/index.html" ]] ||
