@@ -47,6 +47,12 @@ case "$MODE" in
     if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
       fail "O preview ja existe. Pare com: bash scripts/port-unraid.sh stop"
     fi
+    # Stamp the current WASM and make the upstream preview send no-store
+    # before publishing the HTTP endpoint. Does NOT recompile game code.
+    docker run --rm --init \
+      --mount "type=bind,source=$ROOT,target=/project" \
+      "$IMAGE" python3 /project/scripts/prepare-psp-preview.py \
+      /project/.recomp-work/psp-web-recomp
     trace_flags=()
     if [[ "${PES6_TRACE_HLE:-0}" == "1" ]]; then
       trace_flags+=(-e PSPWEB_TRACE_HLE=1)
