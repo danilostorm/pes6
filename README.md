@@ -26,6 +26,21 @@ Para atualizar: `git pull --ff-only && docker compose up -d --build`.
 
 Na produção, publique atrás de HTTPS (reverse proxy) preservando COOP/COEP e use um hostname separado dos demais sites que precisem de conteúdo cross-origin.
 
+## Recompilacao experimental do PES 6 (ISO local no Unraid)
+
+O servidor web **nao executa PES 6 apenas porque a ISO esta presente**. Para preparar uma compilacao local, sem adicionar arquivos comerciais ao GitHub:
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh build
+# se concluir, iniciar um preview separado:
+bash scripts/port-unraid.sh serve
+# http://IP_DO_UNRAID:8613
+```
+
+O script usa um ambiente Ubuntu isolado e tenta descriptografar o executavel antes de iniciar o PSPRecomp/Emscripten. Nao ha garantia de que o jogo compile ou inicialize sem ajustes especificos de HLE/GPU/arquivo. Consulte [guia completo para Unraid](docs/UNRAID_PORT.md).
+
 ## O que foi construído
 
 - **Página responsiva PT-BR** com painel de jogo, status real do motor e modos touch
