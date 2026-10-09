@@ -39,8 +39,14 @@ case "$MODE" in
     if docker container inspect "$CONTAINER" >/dev/null 2>&1; then
       fail "O preview ja existe. Pare com: bash scripts/port-unraid.sh stop"
     fi
+    trace_flags=()
+    if [[ "${PES6_TRACE_HLE:-0}" == "1" ]]; then
+      trace_flags+=(-e PSPWEB_TRACE_HLE=1)
+    fi
     docker run -d --name "$CONTAINER" \
       -p "${PES6_PREVIEW_BIND:-0.0.0.0}:$PREVIEW_PORT:8613" \
+      -e PSPRECOMP_TRACE_ON_ERROR=1 \
+      "${trace_flags[@]}" \
       --mount "type=bind,source=$ROOT,target=/project" \
       "$IMAGE" bash -lc 'cd /project/.recomp-work/psp-web-recomp && \
         sed -i '\''s/("127.0.0.1", port)/("0.0.0.0", port)/'\'' scripts/serve.py && \
