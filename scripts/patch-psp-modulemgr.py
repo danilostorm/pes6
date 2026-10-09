@@ -43,11 +43,13 @@ def prepare(root: Path) -> None:
         if len(lines) != 1 or not lines[0].rstrip().endswith("),"):
             raise RuntimeError("Browser shell preRun changed; trace patch NOT applied")
         original = lines[0]
-        replacement = original.rstrip("\\n")[:-1] + (
+        if not original.endswith(")," + chr(10)):
+            raise RuntimeError("Browser shell preRun line ending changed")
+        replacement = original[:-2] + (
             ".concat(/[?&]trace=1(?:&|$)/.test(location.search) ? "
             "[function () { ENV.PSPWEB_TRACE_HLE = '1'; "
-            "ENV.PSPRECOMP_TRACE_ON_ERROR = '1'; }] : []),\\n"
-        )
+            "ENV.PSPRECOMP_TRACE_ON_ERROR = '1'; }] : []),"
+        ) + chr(10)
         web = web.replace(original, replacement, 1)
 
     h = replace_exact(
