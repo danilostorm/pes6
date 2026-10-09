@@ -20,12 +20,21 @@ signature() {
 fail() { echo "ERRO: $*" >&2; exit 1; }
 
 [[ -f "$ISO" ]] || fail "Arquivo nao encontrado: $ISO"
-mkdir -p "$WORK" "$GAME/root"
+mkdir -p "$WORK"
 
 echo "== [1/5] Obtendo PSP Web Recomp (somente codigo aberto)"
 if [[ ! -d "$UPSTREAM/.git" ]]; then
+  # Versoes anteriores criavam /games/pes6/root antes do git clone.
+  # Retirar SOMENTE essas pastas se estiverem completamente vazias.
+  # Nao executar rm -rf: pode haver dados do usuario neste caminho.
+  if [[ -d "$GAME/root" ]]; then
+    rmdir "$GAME/root" "$GAME" "$UPSTREAM/games" "$UPSTREAM" 2>/dev/null || true
+  fi
+  [[ ! -e "$UPSTREAM" ]] ||
+    fail "A pasta $UPSTREAM ja existe e nao e um clone Git. Verifique seu conteudo antes de mover ou remover; nenhum arquivo foi apagado."
   git clone https://github.com/snuri00/psp-web-recomp.git "$UPSTREAM"
 fi
+mkdir -p "$GAME/root"
 
 echo "== [2/5] Extraindo ISO local do PES6 (arquivo original inalterado)"
 if [[ ! -f "$DISC/PSP_GAME/SYSDIR/EBOOT.BIN" ]]; then
