@@ -1,0 +1,25 @@
+# Never send game images, generated WebAssembly or compiler artifacts into Docker builds.
+.git
+.gitignore
+.env
+.buildx
+.recomp-work
+*.iso
+*.cso
+*.7z
+*.elf
+*.wasm
+*.afs
+*.prx
+*.pmf
+*.at3
+*.bin
+*.log
+node_modules
+coverage
+test
+docs
+scripts
+tools
+public/runtime/*
+!public/runtime/README.md
