@@ -4,7 +4,7 @@ services:
     container_name: pes6-web
     restart: unless-stopped
     ports:
-      - "8787:8787"
+      - "${PES6_HTTP_PORT:-8787}:8787"
     environment:
       PORT: "8787"
       HOST: "0.0.0.0"
