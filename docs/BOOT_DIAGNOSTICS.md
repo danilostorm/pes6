@@ -55,3 +55,41 @@ Nenhuma compilacao do jogo deve ser versionada neste GitHub publico.
 
 - [PSPSDK Module Manager](https://pspdev.github.io/pspsdk/group__ModuleMgr.html)
 - [PSP Web Recomp debugging](https://github.com/snuri00/psp-web-recomp/blob/main/docs/internals.md)
+
+## Segunda execucao: falta de entrada AOT (09/10/2026)
+
+A HLE `sceKernelGetModuleIdByAddress(0x089943DC)` agora retorna `0x101`,
+em vez do fallback zero, e o programa progride ate as chamadas de interrupcao.
+
+A falha atual e:
+
+```text
+[kernel] halted: No recompiled function registered at 0x0897FD08
+```
+
+Este erro indica um PC sem registro no AOT, **nao** prova que os bytes
+correspondam a uma funcao valida nem que haja erro no navegador.
+
+Foi adicionado um diagnostico de leitura apenas dos arquivos locais, que
+faz a correspondencia entre ELF, intervalos executaveis, palavras Allegrex,
+rotulo de codigo e `runtime.register_function` no arquivo C++ gerado:
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh diagnose
+```
+
+Para investigar outro endereco sem recompilar:
+
+```bash
+PES6_DIAG_PC=0x0897FD08 bash scripts/port-unraid.sh diagnose
+```
+
+O comando utiliza o contêiner compilador existente, com o repositorio
+montado como **somente leitura**. Nao modifica a ISO, o ELF nem o build.
+
+Se a instrucao estiver fora de um segmento RX, verificar o salto/pilha;
+se estiver dentro e o rotulo aparecer sem registro, corrigir o conjunto
+de entradas de dispatch; se nao tiver rotulo, corrigir a descoberta
+de fluxo (alvos indiretos, seeds) do PSPRecomp.
