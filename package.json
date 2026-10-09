@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test",
-    "check": "node --check server.mjs && node --check public/app.js && node --check public/engine-adapter.js"
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/engine-adapter.js && node --check scripts/inspect-psp.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
