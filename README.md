@@ -69,3 +69,14 @@ npm test
 ```
 
 Mais detalhes em [docs/BUILD_ENGINE.md](docs/BUILD_ENGINE.md).
+
+## Arquivos PES6 verificados em 09/10/2026
+
+A análise do material fornecido confirmou a edição PSP europeia **ULES00476**, versão **1.03**. O `EBOOT.BIN` ainda está **criptografado** (`~PSP`), portanto o motor jogável segue pendente. O repositório inclui agora um [diagnóstico detalhado e orientações](docs/ASSET_PREFLIGHT.md) e um **verificador local**:
+
+```bash
+node scripts/inspect-psp.mjs --dir "/caminho/para/PES6"
+```
+
+O verificador não decripta, distribui nem recompila os arquivos do jogo.
+
