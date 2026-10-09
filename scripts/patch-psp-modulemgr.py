@@ -9,12 +9,14 @@ import sys
 
 
 def replace_exact(src: str, old: str, new: str, where: Path) -> str:
+    # A replacement can contain its original anchor. Test for the full
+    # replacement first, otherwise consecutive builds duplicate declarations.
+    if new in src:
+        return src
     if old in src:
         if src.count(old) != 1:
             raise RuntimeError(f"Ambiguous anchor in {where}: {old[:90]!r}")
         return src.replace(old, new, 1)
-    if new in src:
-        return src
     raise RuntimeError(
         f"Upstream version differs in {where}; patch NOT applied. "
         f"Expected anchor: {old[:100]!r}"
