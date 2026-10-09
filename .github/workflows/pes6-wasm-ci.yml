@@ -1,0 +1,105 @@
+name: PES6 WebAssembly Auto Build + Browser Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tools/recomp/**'
+      - '.github/workflows/pes6-wasm-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pes6-wasm-main
+  cancel-in-progress: true
+
+jobs:
+  pes6-web-smoke:
+    # Never execute PR code with the game image.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check private ISO configuration
+        id: gate
+        shell: bash
+        env:
+          DRIVE_FILE_ID: ${{ secrets.PES6_DRIVE_FILE_ID }}
+        run: |
+          if [[ -n "$DRIVE_FILE_ID" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "PES6 ISO unavailable: set repository secret PES6_DRIVE_FILE_ID and run this workflow again." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.configured == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install native compiler, emulator toolchain dependencies and Chromium
+        if: steps.gate.outputs.configured == 'true'
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang cmake ninja-build git ca-certificates \
+            curl make zlib1g-dev libssl-dev pkg-config xz-utils pigz \
+            zip unzip gzip
+          python -m pip install --disable-pip-version-check 'gdown==5.2.0' 'playwright==1.55.0'
+          python -m playwright install --with-deps chromium
+          sudo ln -s "$GITHUB_WORKSPACE" /project
+          df -h /project
+
+      - name: Fetch ISO from Google Drive into ephemeral runner only
+        if: steps.gate.outputs.configured == 'true'
+        shell: bash
+        env:
+          DRIVE_FILE_ID: ${{ secrets.PES6_DRIVE_FILE_ID }}
+        run: |
+          # Do not echo URL or ID, upload ISO or publish generated game binaries.
+          gdown --id "$DRIVE_FILE_ID" --output /project/pes6.iso --quiet
+          test "$(stat -c %s /project/pes6.iso)" -eq 1248329728
+          echo "ISO size verified; file remains local to this ephemeral GitHub runner."
+
+      - name: Recompile, boot and automatically retry validated AOT gaps
+        if: steps.gate.outputs.configured == 'true'
+        id: boot
+        continue-on-error: true
+        shell: bash
+        env:
+          PES6_BUILD_JOBS: '2'
+          PES6_CI_MAX_ROUNDS: '5'
+        run: bash scripts/ci/recompile_loop.sh
+
+      - name: Write diagnostics summary (no game binaries)
+        if: always() && steps.gate.outputs.configured == 'true'
+        shell: bash
+        run: |
+          if [[ -f ci-reports/rounds.log ]]; then
+            {
+              echo '### PES6 PSP WebAssembly boot checks'
+              cat ci-reports/rounds.log
+              echo 'A stable browser smoke check does not confirm the main menu or controller gameplay.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.gate.outputs.configured == 'true'
+        with:
+          name: pes6-boot-diagnostics
+          path: |
+            ci-reports/*.json
+            ci-reports/rounds.log
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Fail workflow if boot smoke did not stabilize
+        if: steps.gate.outputs.configured == 'true' && steps.boot.outcome == 'failure'
+        run: exit 1
