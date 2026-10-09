@@ -40,9 +40,11 @@ case "$MODE" in
       fail "O preview ja existe. Pare com: bash scripts/port-unraid.sh stop"
     fi
     docker run -d --name "$CONTAINER" \
-      -p "$PREVIEW_PORT:8613" \
+      -p "${PES6_PREVIEW_BIND:-0.0.0.0}:$PREVIEW_PORT:8613" \
       --mount "type=bind,source=$ROOT,target=/project" \
-      "$IMAGE" bash -lc 'cd /project/.recomp-work/psp-web-recomp && exec scripts/serve.sh pes6 8613'
+      "$IMAGE" bash -lc 'cd /project/.recomp-work/psp-web-recomp && \
+        sed -i '\''s/("127.0.0.1", port)/("0.0.0.0", port)/'\'' scripts/serve.py && \
+        exec scripts/serve.sh pes6 8613'
     echo "== Preview iniciado: http://IP_DO_UNRAID:$PREVIEW_PORT"
     ;;
   stop)
