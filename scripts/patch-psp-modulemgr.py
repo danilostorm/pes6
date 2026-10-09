@@ -29,8 +29,26 @@ def prepare(root: Path) -> None:
     if not header.is_file() or not source.is_file():
         raise RuntimeError(f"PSP Web Recomp sources missing inside: {root}")
 
+    shell = root / "profile" / "web" / "shell.html"
+    if not shell.is_file():
+        raise RuntimeError(f"Browser shell not found: {shell}")
     h = header.read_text()
     c = source.read_text()
+    web = shell.read_text()
+    if "ENV.PSPRECOMP_TRACE_ON_ERROR = '1'" not in web:
+        lines = [
+            line for line in web.splitlines(keepends=True)
+            if line.lstrip().startswith("preRun: [mountSaves]")
+        ]
+        if len(lines) != 1 or not lines[0].rstrip().endswith("),"):
+            raise RuntimeError("Browser shell preRun changed; trace patch NOT applied")
+        original = lines[0]
+        replacement = original.rstrip("\\n")[:-1] + (
+            ".concat(/[?&]trace=1(?:&|$)/.test(location.search) ? "
+            "[function () { ENV.PSPWEB_TRACE_HLE = '1'; "
+            "ENV.PSPRECOMP_TRACE_ON_ERROR = '1'; }] : []),\\n"
+        )
+        web = web.replace(original, replacement, 1)
 
     h = replace_exact(
         h,
@@ -107,7 +125,10 @@ void Kernel::sceKernelGetModuleIdByAddress(Ctx &ctx) {
         header.write_text(h)
     if c != source.read_text():
         source.write_text(c)
+    if web != shell.read_text():
+        shell.write_text(web)
     print("ModuleMgrForUser::sceKernelGetModuleIdByAddress: HLE installed (idempotent).")
+    print("Browser guest tracing available with ?trace=1")
 
 
 if __name__ == "__main__":
