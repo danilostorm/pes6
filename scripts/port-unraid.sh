@@ -3,8 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-IMAGE="${PES6_BUILDER_IMAGE:-storp es6-builder:local}"
-IMAGE="${IMAGE// /}"  # storpes6-builder:local
+IMAGE="${PES6_BUILDER_IMAGE:-storpes6-builder:local}"
 MODE="${1:-build}"
 PREVIEW_PORT="${PES6_PREVIEW_PORT:-8613}"
 CONTAINER="pes6-recomp-preview"
