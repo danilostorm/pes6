@@ -180,3 +180,56 @@ Se o navegador ainda apontar o endereco antigo apos recompilar, forcar
 atualizacao completa da pagina, verificar cache do proxy e conferir a
 saida do novo build. Um numero de FPS na pagina nao significa que o jogo
 esta funcional enquanto aparece `Stopped`.
+
+## Quinta etapa: terceiro destino AOT ausente (0x089864DC)
+
+Depois de incluir as entradas `0x0897FD08` e `0x08986598`,
+o jogo chegou novamente a inicializacao de video, mas parou em:
+
+```text
+[missing-aot] pc=0x089864DC ra=0x089850B8 sp=0x09FBF950 word=0x50C0001B
+[kernel] halted: No recompiled function registered at 0x089864DC
+```
+
+A instrucao `0x50C0001B` e uma ramificacao condicional MIPS
+`beql a2,zero,+27`, cujo alvo tomado fica em `0x0898654C`.
+Este dado e um indício de código válido, mas **não estabelece qual
+salto anterior gerou o PC 0x089864DC**: o histórico de 24 despachos
+do lado de fora da unidade C++ não inclui necessariamente saltos
+encadeados internamente.
+
+Os valores padrao dos scripts agora sao:
+
+```text
+PES6_EXTRA_SEEDS=0x0897FD08,0x08986598,0x089864DC
+PES6_DIAG_PC=0x089864DC
+```
+
+O script `validate-aot-seeds.py` verifica no ELF local que cada PC
+esta alinhado, dentro do segmento executavel file-backed e tem uma
+instrucao diferente de zero **antes** do codegen. Se falhar, nao
+force o seed. Se passar, o novo teste de navegador sera necessario
+para descobrir se ha outras lacunas CFG ou problemas de HLE.
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh stop
+bash scripts/port-unraid.sh build
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh serve
+```
+
+Quando houver novos enderecos de entrada, pode-se passa-los sem
+editar novamente o repositorio:
+
+```bash
+PES6_DIAG_PC=0xENDERECO bash scripts/port-unraid.sh diagnose
+PES6_EXTRA_SEEDS=0x0897FD08,0x08986598,0x089864DC,0xENDERECO bash scripts/port-unraid.sh build
+```
+
+Mas primeiro validar os enderecos no ELF e revisar o trace.
+Se muitos PCs diferentes continuarem faltando, deve-se investigar
+uma correcao sistematica do analisador (alvos indiretos/tabelas de salto),
+em vez de adicionar centenas de entradas manualmente.
