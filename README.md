@@ -26,6 +26,12 @@ Para atualizar: `git pull --ff-only && docker compose up -d --build`.
 
 Na produção, publique atrás de HTTPS (reverse proxy) preservando COOP/COEP e use um hostname separado dos demais sites que precisem de conteúdo cross-origin.
 
+## Compilacao e testes automaticos no GitHub Actions
+
+O projeto inclui o workflow [PES6 WebAssembly Auto Build + Browser Smoke](https://github.com/danilostorm/pes6/actions/workflows/pes6-wasm-ci.yml), que compila e executa o PES6 PSP em um Chromium temporario do GitHub, validando automaticamente ate cinco rodadas de entradas AOT faltantes. Para rodar, configure uma unica vez o segredo `PES6_DRIVE_FILE_ID` com o ID da ISO no Google Drive. Nenhum arquivo comercial e versionado ou disponibilizado como artefato.
+
+Veja [o guia de configuracao e limites do teste automatizado](docs/GITHUB_ACTIONS_TESTING.md). Um smoke test sem travamentos **nao garante** jogabilidade ou menus funcionais.
+
 ## Recompilacao experimental do PES 6 (ISO local no Unraid)
 
 O servidor web **nao executa PES 6 apenas porque a ISO esta presente**. Para preparar uma compilacao local, sem adicionar arquivos comerciais ao GitHub:
