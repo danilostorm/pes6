@@ -19,3 +19,10 @@ jobs:
         run: npm run check
       - name: Run tests
         run: npm test
+      - name: Validate automated PSP build scripts
+        run: |
+          bash -n scripts/ci/recompile_loop.sh
+          bash -n scripts/port-unraid.sh
+          bash -n scripts/port-unraid-inner.sh
+          python3 -m py_compile scripts/ci/smoke_browser.py scripts/recover-psp-blocks.py scripts/validate-aot-seeds.py scripts/patch-psp-extra-seeds.py scripts/prepare-psp-preview.py
+          python3 -m unittest discover -s test -p 'test_ci_helpers.py' -v
