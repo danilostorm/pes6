@@ -61,15 +61,14 @@ FunctionAnalysis analyze_function('''
     if original.count(anchor) != 1:
         raise RuntimeError("PSPRecomp analyzer anchor changed. No patch applied.")
 
+    replacement = replacement.replace(r"\\n", r"\n").replace(r"\\0", r"\0")
     patched = original.replace(anchor, replacement, 1)
     patched = patched.replace(
         "#include <algorithm>\n",
         "#include <algorithm>\n#include <cstdlib>\n#include <iostream>\n#include <sstream>\n",
         1,
     )
-    # Use actual C++ escape sequences, not literal newline characters inside
-    # string literals. The generated C++ must remain a valid translation unit.
-    patched = patched.replace(r"\\n", r"\n").replace(r"\\0", r"\0")
+    # Existing upstream source bytes must not be rewritten or normalized.
     source_file.write_text(patched, encoding="utf-8")
     print("PSPRecomp extra-seed patch: applied")
 
