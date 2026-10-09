@@ -30,7 +30,8 @@ case "$MODE" in
       --name pes6-recomp-build \
       --mount "type=bind,source=$ROOT,target=/project" \
       -e "JOBS=${PES6_BUILD_JOBS:-4}" \
-      -e "PES6_EXTRA_SEEDS=${PES6_EXTRA_SEEDS:-0x0897FD08,0x08986598,0x089864DC}" \
+      -e "PES6_EXTRA_SEEDS=${PES6_EXTRA_SEEDS:-0x0897FD08,0x08986598,0x089864DC,0x089864D0}" \
+      -e "PES6_RECOVER_REGION=${PES6_RECOVER_REGION:-0x08986480:0x08986620}" \
       "$IMAGE" bash /project/scripts/port-unraid-inner.sh
     ;;
   diagnose)
@@ -38,7 +39,7 @@ case "$MODE" in
     docker run --rm --init \
       --mount "type=bind,source=$ROOT,target=/project,readonly" \
       "$IMAGE" python3 /project/scripts/diagnose-aot-entry.py \
-      --root /project --address "${PES6_DIAG_PC:-0x089864DC}"
+      --root /project --address "${PES6_DIAG_PC:-0x089864D0}"
     ;;
   serve)
     [[ -f "$ROOT/.recomp-work/psp-web-recomp/build/web-pes6/profiles/web/index.html" ]] ||
