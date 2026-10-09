@@ -1,0 +1,8 @@
+node_modules/
+.env
+*.log
+.DS_Store
+coverage/
+# Commercial game assets / compiled executables are intentionally excluded.
+public/runtime/*
+!public/runtime/README.md

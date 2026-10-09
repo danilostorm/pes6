@@ -1,0 +1,13 @@
+services:
+  pes6-web:
+    build: .
+    container_name: pes6-web
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    environment:
+      PORT: "8787"
+      HOST: "0.0.0.0"
+    # When an authorized WASM build exists, mount it read-only:
+    # volumes:
+    #   - /mnt/user/appdata/pes6/runtime:/app/public/runtime:ro

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#081323">
+  <meta name="description" content="Projeto independente de launcher web para um jogo PSP recompilado pelo próprio usuário.">
+  <title>STOR PES6 • Portal Web</title>
+  <link rel="stylesheet" href="/style.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="STOR PES6 - início"><span class="brand-icon">S<span>6</span></span><span>STOR<strong>PES6</strong><small>WEB PLAY PROJECT</small></span></a>
+    <div class="top-actions"><span class="pill" id="serverStatus"><i></i> Conectando</span><button id="goFullscreen" class="ghost">⛶ <span>Tela cheia</span></button></div>
+  </header>
+  <main class="page">
+    <section class="intro">
+      <div><span class="eyebrow">SELF-HOSTED • PC + MOBILE</span><h1>Seu futebol, <em>no navegador.</em></h1><p>Uma plataforma independente para conectar um motor PSP recompilado, jogar com controles e encontrar amigos em salas privadas.</p></div>
+      <div class="intro-note"><span>STATUS DO MOTOR</span><strong id="engineFlag">Verificando...</strong><small>O executável e os dados do PES 6 não estão incluídos neste repositório.</small></div>
+    </section>
+    <div class="layout">
+      <section class="play-area">
+        <div id="stage" class="stage" tabindex="0" aria-label="Área de jogo">
+          <canvas id="gameCanvas" width="480" height="272" aria-label="Tela de execução"></canvas>
+          <div id="placeholder" class="placeholder"><div class="stadium-icon">⚽</div><span class="eyebrow">STOR PLAY • PES6</span><h2 id="stageTitle">Pronto para conectar o motor</h2><p id="stageInfo">Este launcher é funcional, mas o PES 6 precisa ser recompilado separadamente. Nenhum jogo está sendo emulado nesta tela.</p><button class="primary" id="startGame">Verificar e iniciar motor</button><span class="micro" id="inputTest">Controles: aguardando entrada</span></div>
+          <div id="touchPad" class="touch-pad" aria-label="Controle de toque">
+            <div class="pad-left"><div class="shoulders"><button data-control="L" aria-label="L">L</button><button data-control="R" aria-label="R">R</button></div><div class="dpad"><button data-control="up" class="up">▲</button><button data-control="left" class="left">◀</button><button data-control="right" class="right">▶</button><button data-control="down" class="down">▼</button></div></div>
+            <div class="pad-right"><div class="face"><button data-control="triangle" class="triangle">△</button><button data-control="square" class="square">□</button><button data-control="circle" class="circle">○</button><button data-control="cross" class="cross">×</button></div><div class="center-btns"><button data-control="select">SELECT</button><button data-control="start">START</button></div></div>
+          </div>
+        </div>
+        <div class="play-tools"><div class="tool-status"><span class="live-dot"></span><span id="runStatus">Motor não carregado</span></div><div class="buttons"><button class="ghost" id="touchToggle">◉ Controle touch</button><button class="ghost" id="controlHelp">⌨ Mapas de controle</button></div></div>
+        <section class="quick-cards"><div class="quick"><span>01</span><strong>Sem streaming de vídeo</strong><p>O objetivo é executar o jogo no dispositivo, via WebAssembly.</p></div><div class="quick"><span>02</span><strong>Controles universais</strong><p>Teclado, gamepad pela Gamepad API e botões touch.</p></div><div class="quick"><span>03</span><strong>Seu próprio servidor</strong><p>Salas e chat operam na sua infraestrutura.</p></div></section>
+      </section>
+      <aside class="sidebar">
+        <nav class="tabs" aria-label="Painéis"><button class="active" data-tab="general">Geral</button><button data-tab="graphics">Gráficos</button><button data-tab="online">Online</button><button data-tab="saves">Arquivos</button></nav>
+        <section class="panel" data-panel="general"><h3>Preferências</h3><label class="setting">Apelido <input id="nickname" maxlength="24" placeholder="Seu apelido" autocomplete="nickname"></label><label class="setting">Volume <div class="range-line"><input id="volume" type="range" min="0" max="100" value="85"><output id="volumeOutput">85%</output></div></label><label class="setting">Controle na tela <select id="touchMode"><option value="auto">Automático (celular)</option><option value="on">Sempre mostrar</option><option value="off">Desativado</option></select></label><div class="hint">As configurações são armazenadas neste navegador. O motor opcional deverá implementar a API indicada no repositório.</div></section>
+        <section class="panel" data-panel="graphics" hidden><h3>Desempenho</h3><label class="setting">Perfil <select id="preset"><option value="low">Econômico (celular/PC fraco)</option><option value="balanced">Equilibrado</option><option value="high">Alta qualidade</option></select></label><label class="setting">Resolução interna <select id="scale"><option value="1">1× • 480×272</option><option value="2">2× • 960×544</option><option value="3">3× • 1440×816</option></select></label><label class="setting">Meta de quadros <select id="fps"><option value="30">30 FPS</option><option value="60">60 FPS (experimental)</option></select></label><label class="setting">Filtro <select id="filter"><option value="linear">Suavizado</option><option value="nearest">Pixel nítido</option></select></label><div class="hint">Estes parâmetros serão repassados ao motor ao iniciar. 60 FPS e resoluções maiores dependem da compatibilidade real da recompilação.</div><p class="readout" id="graphicsSummary"></p></section>
+        <section class="panel" data-panel="online" hidden><h3>Salas online <span class="tiny" id="roomsCount"></span></h3><div class="hint">Sala e chat estão funcionais. Partidas multiplayer precisam de integração com o modo ad-hoc da recompilação do jogo.</div><div class="inline"><button id="refreshRooms" class="ghost">↻ Atualizar</button><button id="newRoom" class="primary">+ Criar sala</button></div><div id="roomsList" class="rooms-list" aria-live="polite"></div><div class="room-current" id="currentRoom" hidden><h4 id="roomTitle"></h4><p id="members"></p><div id="chatMessages" class="chat-messages" role="log"></div><form id="chatForm" class="inline"><input id="chatInput" maxlength="500" autocomplete="off" placeholder="Enviar mensagem" required><button class="primary">Enviar</button></form><button id="leaveRoom" class="ghost full">Sair da sala</button></div></section>
+        <section class="panel" data-panel="saves" hidden><h3>Arquivos locais</h3><p class="hint">Importe e exporte arquivos próprios no navegador. O vínculo desses arquivos ao sistema de saves do jogo dependerá do motor WASM.</p><label class="file-button" for="saveFiles">+ Adicionar arquivos (ZIP / SAVEDATA)</label><input type="file" id="saveFiles" multiple accept=".zip,.bin,.dat,.sfo,.png" hidden><div id="savedFiles" class="saved-files"></div><button id="clearFiles" class="ghost full">Limpar arquivos armazenados</button></section>
+      </aside>
+    </div>
+  </main>
+  <dialog id="helpDialog"><div class="dialog-inner"><h2>Controles</h2><p>Teclado e toque utilizam o mesmo barramento de entrada. O controle físico é lido pela Gamepad API.</p><div class="keygrid"><span>Setas / WASD</span><b>Movimento</b><span>J / Enter</span><b>× Confirmar</b><span>K / Escape</span><b>○ Voltar</b><span>U</span><b>□</b><span>I</span><b>△</b><span>Q / E</span><b>L / R</b><span>Espaço</span><b>START</b><span>Backspace</span><b>SELECT</b></div><p class="hint">As ações só serão entregues ao jogo depois que um runtime compatível for instalado.</p><button id="closeHelp" class="primary full">Entendi</button></div></dialog>
+  <footer>STOR PES6 • PROJETO INDEPENDENTE • Não afiliado à Konami ou aos criadores de outros ports.</footer>
+</body>
+</html>

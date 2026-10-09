@@ -1,0 +1,13 @@
+{
+  "name": "stor-pes6-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Self-hosted browser launcher and multiplayer lobby for a separately compiled PSP game runtime",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test",
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/engine-adapter.js"
+  },
+  "engines": { "node": ">=20" }
+}
