@@ -30,6 +30,7 @@ case "$MODE" in
       --name pes6-recomp-build \
       --mount "type=bind,source=$ROOT,target=/project" \
       -e "JOBS=${PES6_BUILD_JOBS:-4}" \
+      -e "PES6_EXTRA_SEEDS=${PES6_EXTRA_SEEDS:-0x0897FD08}" \
       "$IMAGE" bash /project/scripts/port-unraid-inner.sh
     ;;
   diagnose)
