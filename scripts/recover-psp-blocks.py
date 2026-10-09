@@ -74,7 +74,7 @@ def main():
     p.add_argument("--elf", type=Path, required=True)
     p.add_argument("--seeds", required=True)
     p.add_argument("--range", dest="area", default="0x08986480:0x08986620")
-    p.add_argument("--limit", type=int, default=16)
+    p.add_argument("--limit", type=int, default=24)
     args = p.parse_args()
     try:
         start_s, end_s = args.area.split(":", 1)
