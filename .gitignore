@@ -6,3 +6,18 @@ coverage/
 # Commercial game assets / compiled executables are intentionally excluded.
 public/runtime/*
 !public/runtime/README.md
+
+# Arquivos locais de jogos e compilacao: NUNCA enviar ao GitHub.
+*.iso
+*.cso
+*.7z
+*.elf
+*.wasm
+*.data
+*.afs
+*.prx
+*.pmf
+*.at3
+*.bin
+.buildx/
+.recomp-work/
