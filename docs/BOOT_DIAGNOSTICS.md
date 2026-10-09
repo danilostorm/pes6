@@ -233,3 +233,48 @@ Mas primeiro validar os enderecos no ELF e revisar o trace.
 Se muitos PCs diferentes continuarem faltando, deve-se investigar
 uma correcao sistematica do analisador (alvos indiretos/tabelas de salto),
 em vez de adicionar centenas de entradas manualmente.
+
+## Sexta etapa: preview HTTPS servindo compilacao anterior
+
+O arquivo de terminal de 09/10 confirmou build bem-sucedido com os 3 seeds:
+
+```text
+[analysis] extra seed 0x897fd08 added
+[analysis] extra seed 0x8986598 added
+[analysis] extra seed 0x89864dc added
+[6/6] Linking CXX executable profiles/web/index.html
+Instruction label L_089864DC: YES
+Exact dispatcher registration: YES
+```
+
+Entretanto, o console do navegador trouxe `87775 registered entries`
+e falha em `0x08986598`, que pertencem a uma das compilacoes anteriores.
+Antes de adicionar outros seeds, verificar o caminho Nginx e caches.
+
+O modo `bash scripts/port-unraid.sh serve` agora publica
+`build-info.json` dentro do preview, contendo a hash SHA-256 do index.wasm
+atual, e aplica `Cache-Control: no-store` no servidor original,
+preservando requisições HTTP Range e os headers de isolamento.
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh stop
+bash scripts/port-unraid.sh serve
+curl -fsS "http://127.0.0.1:8613/build-info.json"
+curl -fsS "https://pes6.hoststorm.cloud/build-info.json?check=$(date +%s)"
+curl -sSI http://127.0.0.1:8613/index.wasm | grep -Ei 'Cache-Control|Last-Modified|Content-Length'
+curl -skSI https://pes6.hoststorm.cloud/index.wasm | grep -Ei 'Cache-Control|Age|X-Cache|Last-Modified|Content-Length'
+```
+
+Se os hashes/URLs divergirem, corrigir a configuracao do proxy
+(host de destino e opcao de cache de assets) antes de recompilar o jogo.
+Se as hashes forem iguais e o erro permanecer somente no navegador,
+fazer teste em janela anonima ou Chrome F12 -> Network -> Disable cache,
+recarregar (Ctrl+Shift+R) e inspecionar os arquivos JS/WASM efetivamente
+baixados. O JSON de build nao inclui conteudo comercial, apenas hashes,
+tamanhos e nomes dos artefatos.
+
+**Nao confundir:** o arquivo `build-info.json` vem do servidor;
+comparar o hash no JSON nao e prova de que a pagina anteriormente aberta
+tenha carregado o mesmo WASM. E apenas um primeiro teste de origem.
