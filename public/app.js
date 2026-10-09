@@ -40,7 +40,7 @@ const keyToAction={ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',ArrowLeft
 const sourceStates=new Map();
 function input(source, action, down) {
   const key=`${source}:${action}`;
-  if(sourceStates.get(key)===down)return;
+  if(sourceStates.has(key)===down)return;
   if(down)sourceStates.set(key,true);else sourceStates.delete(key);
   const active=[...sourceStates.keys()].some(k=>k.endsWith(`:${action}`));
   engine.input(action,active);
