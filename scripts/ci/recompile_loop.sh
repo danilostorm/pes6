@@ -8,7 +8,7 @@ logfile="ci-reports/rounds.log"
 : > "$logfile"
 MAX_ROUNDS="$(printenv PES6_CI_MAX_ROUNDS || echo 5)"
 [[ "$MAX_ROUNDS" =~ ^[1-9]$ ]] || { echo "MAX_ROUNDS must be 1..9" >&2; exit 2; }
-seeds="$(printenv PES6_EXTRA_SEEDS || echo 0x0897FD08,0x08986598,0x089864DC,0x089864D0)"
+seeds="$(printenv PES6_EXTRA_SEEDS || echo 0x0897FD08,0x08986598,0x089864DC,0x089864D0,0x08984284,0x08984DEC,0x088C4330,0x088BE928)"
 export JOBS="$(printenv PES6_BUILD_JOBS || echo 2)"
 export PES6_RECOVER_REGION="$(printenv PES6_RECOVER_REGION || echo 0x08986480:0x08986620)"
 preview_pid=""
