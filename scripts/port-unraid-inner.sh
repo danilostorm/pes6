@@ -89,8 +89,16 @@ echo "ELF valido: $(stat -c '%s bytes' "$ELF")"
 echo "== [4/5] Configurando PSPRecomp / Emscripten"
 "$UPSTREAM/scripts/setup.sh"
 
+echo "== [4.1/5] Corrigindo descoberta de entrada AOT (PSPRecomp local)"
+python3 "$PROJECT/scripts/patch-psp-extra-seeds.py" "$UPSTREAM/PSPRecomp"
+# Rebuild the native psp_recomp binary so the next generate.sh actually
+# consumes the changed analyzer (incremental Ninja on subsequent runs).
+"$UPSTREAM/scripts/build_tools.sh"
+
 echo "== [5/5] Recompilando PES6 para o navegador"
 export JOBS
+export PSPRECOMP_EXTRA_SEEDS="${PES6_EXTRA_SEEDS:-0x0897FD08}"
+echo "== Force analysis seeds: $PSPRECOMP_EXTRA_SEEDS"
 "$UPSTREAM/scripts/port.sh" pes6 "$ISO"
 
 echo
