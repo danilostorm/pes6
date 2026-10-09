@@ -278,3 +278,58 @@ tamanhos e nomes dos artefatos.
 **Nao confundir:** o arquivo `build-info.json` vem do servidor;
 comparar o hash no JSON nao e prova de que a pagina anteriormente aberta
 tenha carregado o mesmo WASM. E apenas um primeiro teste de origem.
+
+## Setima etapa: 0x089864D0, recuperar candidatos estruturais ao redor
+
+Os arquivos no preview HTTP e dominio HTTPS tem o mesmo SHA-256 do
+WebAssembly `5ce7a3129021b876...`, confirmando o caminho do proxy.
+No novo teste, apos tres entradas adicionais, ocorreu:
+
+```text
+[missing-aot] pc=0x089864D0 ra=0x089850B8 sp=0x09FBF950 word=0x8D030008
+[kernel] halted: No recompiled function registered at 0x089864D0
+```
+
+O endereco 0x089864D0 esta exatamente apos o `jr ra` em 0x089864C8
+e seu delay slot em 0x089864CC. Analogamente, 0x089864DC vem logo
+depois de um `j` em 0x089864D4 e seu delay slot em 0x089864D8.
+Sao entradas plausiveis para codigo acessado indiretamente (ainda
+nao demonstrado que foram originadas por saltos validos).
+
+O experimento `scripts/recover-psp-blocks.py` detecta possiveis
+entradas apos `J`/`JR`, **apenas** na regiao
+`0x08986480:0x08986620`, no ELF descriptografado local.
+O limite e 16 entradas recuperadas, 32 no total. Rejeita candidatos
+desalinhados, zerados ou fora do segmento executavel; o build
+continua submetendo toda a lista a `validate-aot-seeds.py`.
+Isso **nao e** uma correcao universal para o PSPRecomp: pode haver
+falsos positivos, desempenho pior ou nova incompatibilidade.
+Nenhum binario comercial entra no GitHub.
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh stop
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh build
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh serve
+```
+
+A compilacao mostrara `[recover]`, `[preflight]`, `[analysis]` e
+`Automatic global codegen completed`. Depois do build, verificar
+`Instruction label L_089864D0: YES` e
+`Exact dispatcher registration: YES` no `diagnose`.
+
+Para desativar os candidatos automaticos e usar apenas os quatro
+enderecos observados nos testes, sem editar o codigo:
+
+```bash
+PES6_RECOVER_REGION=off bash scripts/port-unraid.sh build
+```
+
+Se a geracao falhar com `RECOVERY FAILED`, nao aumentar o limite
+automaticamente; estreitar a regiao ou investigar o CFG e a tabela
+de saltos do PES6. Para testes subsequentes, comparar as versoes
+do preview via `/build-info.json`, nao acrescentar varios PC sem
+verificacao.
