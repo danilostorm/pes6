@@ -93,3 +93,46 @@ Se a instrucao estiver fora de um segmento RX, verificar o salto/pilha;
 se estiver dentro e o rotulo aparecer sem registro, corrigir o conjunto
 de entradas de dispatch; se nao tiver rotulo, corrigir a descoberta
 de fluxo (alvos indiretos, seeds) do PSPRecomp.
+
+## Terceira etapa: falta de cobertura de codigo em 0x0897FD08
+
+Diagnostico do servidor AEROCOOL:
+
+```text
+ELF 1914920 bytes, type=0x0002
+PT_LOAD 0x08804000-0x089D6070, flags=111
+0x0897FD08: 0x8FA20224 (instrucao MIPS nao nula)
+generated_unit_0094.cpp: sem rotulo L_0897FD08 e sem registro
+```
+
+A analise estatica atual **nao cobre esse trecho**. O endereco esta no
+segmento executavel da imagem ELF e sucede um salto incondicional com
+delay slot; um destino indireto/jump table e uma explicacao possivel,
+mas ainda nao foi demonstrada.
+
+A rotina `scripts/patch-psp-extra-seeds.py` modifica apenas o checkout
+local do PSPRecomp, permitindo entradas explicitas e validadas na analise.
+O script `port-unraid-inner.sh` recompila as ferramentas do analisador
+apos esse patch. O build padrao do PES6 passa `0x0897FD08` via
+`PSPRECOMP_EXTRA_SEEDS`. Este teste nao ignora instrucoes invalidas
+nem altera ELF, ISO ou textura do jogo.
+
+```bash
+cd /mnt/user/appdata/pes6
+git pull --ff-only
+bash scripts/port-unraid.sh stop
+bash scripts/port-unraid.sh build
+bash scripts/port-unraid.sh diagnose
+bash scripts/port-unraid.sh serve
+```
+
+A saida deve conter `[analysis] extra seed 0x897fd08 added` ou
+`already discovered`. Depois do build, o diagnostico deve mostrar
+`Instruction label L_0897FD08: YES`; se nao mostrar, capturar a
+saida e **nao assumir** que esta corrigido. Mesmo que o codigo seja
+registrado, pode surgir uma proxima falha de inicializacao.
+
+Para testar outro PC posteriormente, sem novo commit de codigo:
+`PES6_EXTRA_SEEDS=0x0897FD08,0xENDERECO bash scripts/port-unraid.sh build`.
+Usar somente enderecos confirmados pelo diagnostico dentro do segmento
+executavel; cada endereco adicional deve ser revisado individualmente.
