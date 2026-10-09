@@ -98,7 +98,15 @@ python3 "$PROJECT/scripts/patch-psp-dispatch-trace.py" "$UPSTREAM/PSPRecomp"
 
 echo "== [5/5] Recompilando PES6 para o navegador"
 export JOBS
-export PSPRECOMP_EXTRA_SEEDS="${PES6_EXTRA_SEEDS:-0x0897FD08,0x08986598,0x089864DC}"
+export PSPRECOMP_EXTRA_SEEDS="${PES6_EXTRA_SEEDS:-0x0897FD08,0x08986598,0x089864DC,0x089864D0}"
+# Recover a small, bounded set of likely entry blocks hidden after MIPS JR/J
+# delay slots around the observed PES6 startup failures. This is experimental.
+if [[ "${PES6_RECOVER_REGION:-0x08986480:0x08986620}" != "off" ]]; then
+  PSPRECOMP_EXTRA_SEEDS="$(python3 "$PROJECT/scripts/recover-psp-blocks.py" \
+    --elf "$ELF" \
+    --seeds "$PSPRECOMP_EXTRA_SEEDS" \
+    --range "${PES6_RECOVER_REGION:-0x08986480:0x08986620}")"
+fi
 echo "== Force analysis seeds: $PSPRECOMP_EXTRA_SEEDS"
 python3 "$PROJECT/scripts/validate-aot-seeds.py" "$ELF" "$PSPRECOMP_EXTRA_SEEDS"
 "$UPSTREAM/scripts/port.sh" pes6 "$ISO"
