@@ -32,6 +32,13 @@ case "$MODE" in
       -e "JOBS=${PES6_BUILD_JOBS:-4}" \
       "$IMAGE" bash /project/scripts/port-unraid-inner.sh
     ;;
+  diagnose)
+    build_image
+    docker run --rm --init \
+      --mount "type=bind,source=$ROOT,target=/project,readonly" \
+      "$IMAGE" python3 /project/scripts/diagnose-aot-entry.py \
+      --root /project --address "${PES6_DIAG_PC:-0x0897FD08}"
+    ;;
   serve)
     [[ -f "$ROOT/.recomp-work/psp-web-recomp/build/web-pes6/profiles/web/index.html" ]] ||
       fail "Build nao encontrado. Execute primeiro: bash scripts/port-unraid.sh build"
@@ -57,6 +64,6 @@ case "$MODE" in
     docker rm -f "$CONTAINER" 2>/dev/null || true
     ;;
   *)
-    fail "Uso: bash scripts/port-unraid.sh [build|serve|stop]"
+    fail "Uso: bash scripts/port-unraid.sh [build|diagnose|serve|stop]"
     ;;
 esac
