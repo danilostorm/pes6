@@ -32,8 +32,8 @@ def check(elf_path: Path, addresses: str):
         addr = vaddr + 0x08804000 if elf_type == 0xFFA0 else vaddr
         sections.append((addr, addr + filesz, off))
     tokens = [v.strip() for v in addresses.split(",") if v.strip()]
-    if not tokens or len(tokens) > 32:
-        raise ValueError("Expected 1..32 comma-separated code addresses")
+    if not tokens or len(tokens) > 128:
+        raise ValueError("Expected 1..128 comma-separated code addresses")
     seen = set()
     for token in tokens:
         pc = int(token, 0)
