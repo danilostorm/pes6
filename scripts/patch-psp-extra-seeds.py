@@ -31,8 +31,8 @@ FunctionAnalysis analyze_function('''
         std::string token;
         std::size_t requested = 0u;
         while (std::getline(values, token, ',')) {
-            if (++requested > 32u) {
-                std::cerr << "[analysis] refusing more than 32 extra entry seeds\\\\n";
+            if (++requested > 128u) {
+                std::cerr << "[analysis] refusing more than 128 extra entry seeds\\\\n";
                 break;
             }
             char *end = nullptr;
