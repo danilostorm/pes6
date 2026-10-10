@@ -109,6 +109,12 @@ if [[ "${PES6_RECOVER_REGION:-0x08986480:0x08986620}" != "off" ]]; then
 fi
 echo "== Force analysis seeds: $PSPRECOMP_EXTRA_SEEDS"
 python3 "$PROJECT/scripts/validate-aot-seeds.py" "$ELF" "$PSPRECOMP_EXTRA_SEEDS"
+# CI-only diagnostic list: detect stale/duplicated dispatches at runtime.
+# This file contains address strings only, never guest code or assets.
+if [[ "${PES6_CI_MODE:-0}" == "1" ]]; then
+  mkdir -p "$PROJECT/.ci-state"
+  printf '%s\n' "$PSPRECOMP_EXTRA_SEEDS" > "$PROJECT/.ci-state/last-build-seeds.txt"
+fi
 "$UPSTREAM/scripts/port.sh" pes6 "$ISO"
 
 echo
