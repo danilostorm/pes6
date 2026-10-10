@@ -93,6 +93,7 @@ echo "== [4.1/5] Corrigindo descoberta de entrada AOT (PSPRecomp local)"
 python3 "$PROJECT/scripts/patch-psp-extra-seeds.py" "$UPSTREAM/PSPRecomp"
 python3 "$PROJECT/scripts/patch-psp-dispatch-trace.py" "$UPSTREAM/PSPRecomp"
 python3 "$PROJECT/scripts/patch-psp-unknown-direct-target.py" "$UPSTREAM/PSPRecomp"
+python3 "$PROJECT/scripts/patch-psp-strict-entry-dispatch.py" "$UPSTREAM/PSPRecomp"
 # Rebuild the native psp_recomp binary so the next generate.sh actually
 # consumes the changed analyzer (incremental Ninja on subsequent runs).
 "$UPSTREAM/scripts/build_tools.sh"
