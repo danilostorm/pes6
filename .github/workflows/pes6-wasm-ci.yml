@@ -21,7 +21,7 @@ jobs:
     # Never execute PR code with the game image.
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
-    timeout-minutes: 110
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
 
@@ -68,15 +68,32 @@ jobs:
           test "$(stat -c %s /project/pes6.iso)" -eq 1248329728
           echo "ISO size verified; file remains local to this ephemeral GitHub runner."
 
-      - name: Recompile, boot and automatically retry validated AOT gaps
+      - name: Restore previously validated entry PCs (text only)
+        if: steps.gate.outputs.configured == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: .ci-state/known-seeds.txt
+          key: pes6-aot-pcs-${{ github.run_id }}
+          restore-keys: |
+            pes6-aot-pcs-
+
+      - name: Recompile, boot and retry validated AOT gaps for up to two hours
         if: steps.gate.outputs.configured == 'true'
         id: boot
         continue-on-error: true
         shell: bash
         env:
           PES6_BUILD_JOBS: '2'
-          PES6_CI_MAX_ROUNDS: '5'
+          PES6_CI_MAX_ROUNDS: '80'
+          PES6_CI_MAX_MINUTES: '120'
         run: bash scripts/ci/recompile_loop.sh
+
+      - name: Save verified AOT entry PCs for the next run (no game binaries)
+        if: always() && steps.gate.outputs.configured == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .ci-state/known-seeds.txt
+          key: pes6-aot-pcs-${{ github.run_id }}
 
       - name: Write diagnostics summary (no game binaries)
         if: always() && steps.gate.outputs.configured == 'true'
