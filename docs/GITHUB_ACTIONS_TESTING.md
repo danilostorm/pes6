@@ -49,8 +49,20 @@ Nao use Pull Requests publicos para executar o teste com ISO.
 - Se encontrar `No recompiled function registered at 0x...`, valida o
   endereco no ELF (alinhamento, segmento executavel, instrucao nao nula).
   Se for novo e valido, acrescenta-o a lista da rodada seguinte.
-- Para apos ate cinco rodadas ou no primeiro erro que nao pode ser
-  corrigido por uma seed (por exemplo HLE, memoria, WebGL, crash JS).
+- Por padrao, tenta **ate 80 rodadas** por execucao, com um limite
+  de **120 minutos** de recompilacao/testes e ate **128 entradas AOT**
+  explicitamente validadas. O job tem limite de 150 minutos no GitHub
+  para permitir instalacao, download e publicacao dos diagnosticos.
+- Ao terminar uma execucao, salva em cache **apenas um arquivo texto
+  com os PCs confirmados**. Na proxima execucao, reutiliza esses PCs em
+  vez de reiniciar do zero. Nao armazena ISO, ELF, WASM nem arquivos
+  comerciais em cache.
+- Para antes do limite apenas se encontrar um problema que nao pode ser
+  resolvido com novos enderecos (HLE, memoria, WebGL, crash JS), se o
+  mesmo PC ja constar do codegen ou se um limite de seguranca for atingido.
+  Tempo maior nao corrige automaticamente esses problemas estruturais.
+- Novos commits aguardam o teste atual terminar, em vez de cancela-lo
+  e desperdiçar as tentativas anteriores.
 - Faz upload **somente de JSON de diagnósticos e logs resumidos**, nunca
   ISO, EBOOT, WebAssembly ou imagens do jogo.
 
@@ -73,3 +85,18 @@ enderecos encontrados. O artefato `pes6-boot-diagnostics` contem apenas
 Se o teste mostrar `configured=false` significa que falta o segredo
 `PES6_DRIVE_FILE_ID`. Esse passo nao pode ser preenchido pela conexao
 do Drive ao ChatGPT: contas e permissoes do GitHub Actions sao separadas.
+
+## Sessao longa (a partir de outubro de 2026)
+
+O workflow antigo parava apos 5 boot tests, apesar de cada rodada
+corrigir uma entrada AOT nova. O usuario solicitou mais tempo por teste,
+por isso o novo padrao e 80 rodadas / ate 120 minutos e 128 PCs validados.
+O tempo **e teto, nao obrigacao**: se o jogo chegar a um estado
+`running_unverified`, se der falha nao reparavel ou se houver erro
+de infraestrutura, o teste pode encerrar antes, produzindo relatorio.
+
+A etapa de validacao do codigo continua curta e independente. O build
+real pode consumir cotas do GitHub Actions; monitorar o consumo e evitar
+reexecucoes repetitivas quando a falha exigir uma correcao sistematica
+do PSPRecomp. Os resultados nao sao release nem comprovacao de
+funcionamento do menu/controles.
