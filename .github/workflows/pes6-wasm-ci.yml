@@ -14,7 +14,7 @@ permissions:
 
 concurrency:
   group: pes6-wasm-main
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   pes6-web-smoke:
