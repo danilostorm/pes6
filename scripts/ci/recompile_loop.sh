@@ -6,11 +6,47 @@ cd /project
 mkdir -p ci-reports
 logfile="ci-reports/rounds.log"
 : > "$logfile"
-MAX_ROUNDS="$(printenv PES6_CI_MAX_ROUNDS || echo 5)"
-[[ "$MAX_ROUNDS" =~ ^[1-9]$ ]] || { echo "MAX_ROUNDS must be 1..9" >&2; exit 2; }
-seeds="$(printenv PES6_EXTRA_SEEDS || echo 0x0897FD08,0x08986598,0x089864DC,0x089864D0,0x08984284,0x08984DEC,0x088C4330,0x088BE928)"
-export JOBS="$(printenv PES6_BUILD_JOBS || echo 2)"
-export PES6_RECOVER_REGION="$(printenv PES6_RECOVER_REGION || echo 0x08986480:0x08986620)"
+# More than five short attempts: work for up to two hours or 80 boots.
+# A hard wall-clock budget keeps Actions costs bounded even if a tool hangs.
+MAX_ROUNDS="${PES6_CI_MAX_ROUNDS:-80}"
+MAX_MINUTES="${PES6_CI_MAX_MINUTES:-120}"
+MAX_SEEDS=128
+[[ "$MAX_ROUNDS" =~ ^[1-9][0-9]?$|^100$ ]] && (( MAX_ROUNDS <= 100 )) ||
+  { echo "PES6_CI_MAX_ROUNDS must be 1..100" >&2; exit 2; }
+[[ "$MAX_MINUTES" =~ ^[1-9][0-9]?$|^1[0-7][0-9]$|^180$ ]] ||
+  { echo "PES6_CI_MAX_MINUTES must be 1..180" >&2; exit 2; }
+started_at="$(date +%s)"
+
+# Carry verified AOT PCs forward across GitHub workflow executions using only
+# a small text cache; the runner never caches ISO, ELF, game data, or WebAssembly.
+mkdir -p .ci-state
+seed_file=".ci-state/known-seeds.txt"
+seeds="${PES6_EXTRA_SEEDS:-0x0897FD08,0x08986598,0x089864DC,0x089864D0,0x08984284,0x08984DEC,0x088C4330,0x088BE928,0x088BE534,0x088C160C,0x0880D7AC,0x0880D7CC}"
+declare -A known=()
+distinct=()
+add_unique_seed() {
+  local pc="$1"
+  [[ "$pc" =~ ^0[xX][0-9A-Fa-f]{8}$ ]] || { echo "Invalid cached seed: $pc" >&2; return 2; }
+  pc="0x${pc:2}"
+  pc="${pc^^}"
+  if [[ -z "${known[$pc]+yes}" ]]; then
+    known[$pc]=1
+    distinct+=("$pc")
+  fi
+}
+IFS=, read -ra base_list <<< "$seeds"
+for pc in "${base_list[@]}"; do add_unique_seed "$pc"; done
+if [[ -s "$seed_file" ]]; then
+  IFS=, read -ra saved_list < "$seed_file"
+  for pc in "${saved_list[@]}"; do add_unique_seed "$pc"; done
+  echo "== Restored ${#saved_list[@]} saved AOT addresses from diagnostic cache."
+fi
+(( ${#distinct[@]} <= MAX_SEEDS )) || { echo "Too many cached AOT seeds" >&2; exit 2; }
+seeds="$(IFS=,; echo "${distinct[*]}")"
+printf '%s\n' "$seeds" > "$seed_file"
+export JOBS="${PES6_BUILD_JOBS:-2}"
+export PES6_RECOVER_REGION="${PES6_RECOVER_REGION:-0x08986480:0x08986620}"
+export PES6_CI_MODE=1
 preview_pid=""
 
 cleanup() {
@@ -22,7 +58,12 @@ cleanup() {
 trap cleanup EXIT
 
 for ((round=1; round<=MAX_ROUNDS; round++)); do
-  echo "=== PES6 automatic recompilation round $round / $MAX_ROUNDS ==="
+  elapsed="$(( $(date +%s) - started_at ))"
+  if (( elapsed >= MAX_MINUTES * 60 )); then
+    echo "Elapsed time budget of $MAX_MINUTES minutes exhausted after $((round - 1)) rounds." | tee -a "$logfile" >&2
+    exit 11
+  fi
+  echo "=== PES6 automatic recompilation round $round / $MAX_ROUNDS; elapsed $((elapsed / 60))m / ${MAX_MINUTES}m ==="
   printf 'ROUND %s seeds=%s\n' "$round" "$seeds" >> "$logfile"
   export PES6_EXTRA_SEEDS="$seeds"
   bash scripts/port-unraid-inner.sh
@@ -67,14 +108,31 @@ for ((round=1; round<=MAX_ROUNDS; round++)); do
         echo "AOT PC already seeded: $pc. Investigate codegen/dispatch instead of repeating." | tee -a "$logfile" >&2
         exit 7
       fi
-      if ((round==MAX_ROUNDS)); then
-        echo "Automatic retry budget exhausted at $pc" >&2
+      # If the address is already in the generated AOT set, more seeding
+      # cannot fix a runtime dispatch/codegen mismatch. Stop and diagnose.
+      if [[ -s .ci-state/last-build-seeds.txt ]]; then
+        compiled="$(tr '[:lower:]' '[:upper:]' < .ci-state/last-build-seeds.txt)"
+        if [[ ",$compiled," == *",$norm_pc,"* ]]; then
+          echo "Missing PC $pc was ALREADY requested in compiled AOT entries; investigate codegen/runtime. Aborting futile retries." | tee -a "$logfile" >&2
+          exit 12
+        fi
+      fi
+      if ((round == MAX_ROUNDS)); then
+        echo "Automatic retry budget exhausted at $pc" | tee -a "$logfile" >&2
         exit 8
+      fi
+      if (( ${#distinct[@]} >= MAX_SEEDS )); then
+        echo "Max $MAX_SEEDS validated PCs reached. Investigate systematic CFG discovery instead of relaxing further." | tee -a "$logfile" >&2
+        exit 13
       fi
       next="$seeds,$pc"
       python3 scripts/validate-aot-seeds.py \
         /project/.recomp-work/psp-web-recomp/games/pes6/root/EBOOT.BIN "$next"
+      add_unique_seed "$pc"
       seeds="$next"
+      # Persist only address strings. The cache/save step runs even if this
+      # workflow fails later; the next push resumes after these PCs.
+      printf '%s\n' "$seeds" > "$seed_file"
       echo "New validated AOT entry: $pc; scheduling next local build" | tee -a "$logfile"
       ;;
     guest_halted|infrastructure_error)
