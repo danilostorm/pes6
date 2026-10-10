@@ -82,7 +82,7 @@ def main():
         raw = args.elf.read_bytes()
         spans = segments_from_elf(raw)
         original = [int(s.strip(), 0) for s in args.seeds.split(",") if s.strip()]
-        if not original or len(original) > 32 or args.limit < 0:
+        if not original or len(original) > 128 or args.limit < 0:
             raise ValueError("Invalid seed list or maximum count")
         unique = list(dict.fromkeys(original))
         discovered = []
@@ -90,8 +90,8 @@ def main():
             if candidate not in unique:
                 unique.append(candidate)
                 discovered.append((candidate, parent, kind, word))
-        if len(discovered) > args.limit or len(unique) > 32:
-            raise ValueError(f"Recovery found {len(discovered)} extra PCs; limit {args.limit}, max total 32. Narrow the window or turn recovery off.")
+        if len(discovered) > args.limit or len(unique) > 128:
+            raise ValueError(f"Recovery found {len(discovered)} extra PCs; limit {args.limit}, max total 128. Narrow the window or turn recovery off.")
         for pc, source, kind, word in discovered:
             print(f"[recover] seed 0x{pc:08X} follows {kind} at 0x{source:08X} (word 0x{word:08X})", file=sys.stderr)
         print(f"[recover] {len(discovered)} additional bounded, structurally plausible entries", file=sys.stderr)
